@@ -1,2 +1,2 @@
-# actronquepy
-A method for controlling Actron Que Air Conditioning
+# ActronQuePy
+A Python module for controlling Actron Que Air Conditioning Systems
