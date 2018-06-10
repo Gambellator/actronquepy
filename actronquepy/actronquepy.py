@@ -1,11 +1,11 @@
 import sys
 import logging
 import time
-import uuid
 import pprint
 
-import requests
 from functools import wraps
+import requests
+
 
 BASE_URL = 'https://que.actronair.com.au'
 USER_DEVICES_SUFFIX = '/api/v0/client/user-devices'
@@ -49,7 +49,7 @@ class ActronQueACSystem(object):
                     mutable = False
                 elif attribute.startswith('Live'):
                     mutable = False
-                
+
                 path_attribute = ActronAttribute(path_name, value, mutable=mutable)
                 self.attribute_index[path_name] = path_attribute
                 self.zones[i].add_attribute(path_attribute)
@@ -125,7 +125,7 @@ class ActronQueCommand(object):
         self.value = value
 
     def __str__(self):
-        return '{0}: {1}'.format(self.command, self.value) 
+        return '{0}: {1}'.format(self.command, self.value)
 
     def get_formatted(self):
         formatted_command = COMMAND_STRUCT
@@ -139,7 +139,7 @@ class ActronQueClient(object):
         self.password = password
         self.device_id = device_id
         self.device_name = device_id
-        self.RSession = requests.Session()
+        self.request_session = requests.Session()
         self.pairing_token = None
         self.expire_time = time.time()
         self.ac_systems = {}
@@ -163,27 +163,27 @@ class ActronQueClient(object):
                      'client': CLIENT_TYPE,
                      'deviceUniqueIdentifier': self.device_id}
 
-        response = self.RSession.post(BASE_URL + USER_DEVICES_SUFFIX, data=auth_data)
+        response = self.request_session.post(BASE_URL + USER_DEVICES_SUFFIX, data=auth_data)
         auth_response = response.json()
         self.pairing_token = auth_response[u'pairingToken']
 
     def _get_oath_token(self):
         if not self.pairing_token:
             self._authenticate()
-        oauth_data = { 'grant_type': 'refresh_token',
-                       'refresh_token': self.pairing_token,
-                       'client_id': 'app'}
+        oauth_data = {'grant_type': 'refresh_token',
+                      'refresh_token': self.pairing_token,
+                      'client_id': 'app'}
 
-        response = self.RSession.post(BASE_URL + TOKEN_SUFFIX, data=oauth_data)
+        response = self.request_session.post(BASE_URL + TOKEN_SUFFIX, data=oauth_data)
         oauth_response = response.json()
         self.expire_time = time.time() + oauth_response[u'expires_in']
-        self.RSession.headers.update({'authorization': '{0} {1}'.format(oauth_response[u'token_type'],
-                                                                        oauth_response[u'access_token'])})
+        self.request_session.headers.update({'authorization': '{0} {1}'.format(oauth_response[u'token_type'],
+                                                                               oauth_response[u'access_token'])})
 
     @_oath_timeout_check
     def _populate(self):
 
-        response = self.RSession.get(BASE_URL + AC_SYSTEMS_SUFFIX)
+        response = self.request_session.get(BASE_URL + AC_SYSTEMS_SUFFIX)
 
         for ac in response.json()[u'_embedded'][u'ac-system']:
             self.ac_systems.update({ac[u'serial']: ActronQueACSystem(self,
@@ -196,7 +196,7 @@ class ActronQueClient(object):
     @_oath_timeout_check
     def _update_data(self):
         for serial, ac in self.ac_systems.iteritems():
-            response = self.RSession.get(BASE_URL + AC_SYSTEMS_SUFFIX + AC_DATA + serial)
+            response = self.request_session.get(BASE_URL + AC_SYSTEMS_SUFFIX + AC_DATA + serial)
             ac.populate(response.json())
 
     @_oath_timeout_check
@@ -204,15 +204,15 @@ class ActronQueClient(object):
         if not isinstance(command_object, ActronQueCommand):
             raise TypeError("Expecting ActronQueCommand Object")
 
-        self.RSession.post(BASE_URL + AC_SYSTEMS_SUFFIX + SEND_CMD + ac_system_object.serial,
-                           json=command_object.get_formatted())
+        self.request_session.post(BASE_URL + AC_SYSTEMS_SUFFIX + SEND_CMD + ac_system_object.serial,
+                                  json=command_object.get_formatted())
 
     def get_ac_systems(self):
         return self.ac_systems
 
     def refresh_data(self):
         self._update_data()
-    
+
 if __name__ == "__main__":
     test = ActronQueClient(sys.argv[1], sys.argv[2])
     test.connect()
