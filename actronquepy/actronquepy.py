@@ -31,6 +31,7 @@ class ActronQueACSystem(object):
         self.ac_type = ac_type
         self.attribute_tree = None
         self.zones = [None] * MAX_ZONES
+        self.system_stats = []
         self.attribute_index = {}
 
     def _populate_zones(self):
@@ -40,10 +41,18 @@ class ActronQueACSystem(object):
                 self.attribute_index[attribute.path] = attribute
                 self.zones[i].add_attribute(attribute)
 
+    def _populate_system_stats(self):
+        self.system_stats = []
+        formatted_serial = unicode("<{0}>".format(self.serial).upper())
+        for attribute in definitions.populate_stats(self.attribute_tree['lastKnownState'][formatted_serial]):
+            self.attribute_index[attribute.path] = attribute
+            self.system_stats.append(attribute)
+
     def populate(self, lastKnownStateDump):
         self.attribute_tree = lastKnownStateDump
-        print pprint.pprint(lastKnownStateDump)
+        #print pprint.pprint(lastKnownStateDump)
         self._populate_zones()
+        self._populate_system_stats()
 
     def get_attribute(self, path):
         try:

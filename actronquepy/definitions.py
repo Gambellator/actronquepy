@@ -96,8 +96,23 @@ def populate_zone(attribute_tree, index):
 
 def populate_stats(attribute_tree):
     '''
+    Takes JSON/dict data recieved from the api and churns out
+    object data based on the definitions.
     '''
-    pass
+    mutable = LIVE_STATS['mutable']
+    attribute_objects = []
+    print attribute_tree
+    for attribute_path, definition in LIVE_STATS['contents'].iteritems():
+        split_path = attribute_path.split('.')
+        path = ".".join(map(lambda x: "[{0}]".format(x) if isinstance(x, int) else x, split_path))
+        try:
+            value = definition['type'](dot_notation(attribute_tree, split_path))
+        except KeyError:
+            logger.debug("Unable to find value for path: %s", path)
+            continue
+        attribute_objects.append(ActronAttribute(path, value,
+                                                 mutable=LIVE_STATS['mutable']))
+    return attribute_objects
 
 def populate_sensors(attribute_tree):
     '''
