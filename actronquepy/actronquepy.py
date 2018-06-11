@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import sys
 import logging
 import time
@@ -6,6 +7,7 @@ import pprint
 from functools import wraps
 import requests
 
+import definitions 
 
 BASE_URL = 'https://que.actronair.com.au'
 USER_DEVICES_SUFFIX = '/api/v0/client/user-devices'
@@ -17,51 +19,37 @@ SEND_CMD = '/cmds/send?serial='
 CLIENT_TYPE = 'Android' # Client options Ios, Android, WindowsPhone or LoadTest"
 MAX_ZONES = 8
 
+logger = logging.getLogger(__name__)
+
 class ActronQueACSystem(object):
 
     def __init__(self, client, serial, description, ac_id, ac_type):
         self.client = client
         self.serial = serial
         self.description = description
-        self.id = ac_id
+        self.ac_id = ac_id
         self.ac_type = ac_type
         self.attribute_tree = None
         self.zones = [None] * MAX_ZONES
         self.attribute_index = {}
 
-    def _get_attribute(self, path):
+    def _populate_zones(self):
+        for i, zone in enumerate(self.attribute_tree['lastKnownState']['RemoteZoneInfo']):
+            self.zones[i] = ActronQueZone(i)
+            for attribute in definitions.populate_zone(self.attribute_tree['lastKnownState'], i):
+                self.attribute_index[attribute.path] = attribute
+                self.zones[i].add_attribute(attribute)
+
+    def populate(self, lastKnownStateDump):
+        self.attribute_tree = lastKnownStateDump
+        print pprint.pprint(lastKnownStateDump)
+        self._populate_zones()
+
+    def get_attribute(self, path):
         try:
             return self.attribute_index[path]
         except KeyError:
             return None
-
-    def _populate_zones(self):
-        for i, zone in enumerate(self.attribute_tree['lastKnownState']['RemoteZoneInfo']):
-            self.zones[i] = ActronQueZone(i)
-            for attribute, value in zone.iteritems():
-                path_name = 'RemoteZoneInfo.[{0}].{1}'.format(i, attribute)
-                mutable = True
-                if attribute == u'Sensors':
-                    continue
-                elif attribute == u'NV_Title':
-                    self.zones[i].name = value
-                elif attribute == u'NV_Exists':
-                    mutable = False
-                elif attribute.startswith('Live'):
-                    mutable = False
-
-                path_attribute = ActronAttribute(path_name, value, mutable=mutable)
-                self.attribute_index[path_name] = path_attribute
-                self.zones[i].add_attribute(path_attribute)
-
-    def _populate(self):
-        pass
-
-    def populate(self, lastKnownStateDump):
-        self.attribute_tree = lastKnownStateDump
-        self._populate_zones()
-        print pprint.pprint(self.attribute_index)
-        print pprint.pprint(self.zones)
 
 class ActronAttribute(object):
 
@@ -70,6 +58,7 @@ class ActronAttribute(object):
         self.attribute = self.path.split(".")[-1]
         self.value = value
         self.mutable = mutable
+        logger.debug("Creating Attribute: %s", self.__repr__())
 
     def __str__(self):
         return str(self.value)
@@ -214,6 +203,7 @@ class ActronQueClient(object):
         self._update_data()
 
 if __name__ == "__main__":
+    logging.basicConfig(level=logging.DEBUG)
     test = ActronQueClient(sys.argv[1], sys.argv[2])
     test.connect()
     while True:
