@@ -101,7 +101,6 @@ def populate_stats(attribute_tree):
     '''
     mutable = LIVE_STATS['mutable']
     attribute_objects = []
-    print attribute_tree
     for attribute_path, definition in LIVE_STATS['contents'].iteritems():
         split_path = attribute_path.split('.')
         path = ".".join(map(lambda x: "[{0}]".format(x) if isinstance(x, int) else x, split_path))

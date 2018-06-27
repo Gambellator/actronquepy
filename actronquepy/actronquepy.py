@@ -217,6 +217,6 @@ if __name__ == "__main__":
     test.connect()
     while True:
         time.sleep(10)
-        print time.time()
+        print(time.time())
         test.refresh_data()
-    print test.get_ac_systems()
+    print(test.get_ac_systems())
