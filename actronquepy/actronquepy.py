@@ -73,7 +73,7 @@ class ActronAttribute(object):
         return str(self.value)
 
     def __repr__(self):
-        return '{0}: {1}'.format(self.path, self.value)
+        return 'ActronAttribute({0}, {1})'.format(self.path, self.value)
 
     def __eq__(self, other):
         return self.value == other
@@ -142,9 +142,22 @@ class ActronQueClient(object):
         self.expire_time = time.time()
         self.ac_systems = {}
 
-    def connect(self):
+    def __enter__(self):
+        self._connect()
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        self._disconnect()
+
+    def __repr__(self):
+        repr_string = '{0}({username}, ******, device_id={device_id}, device_name={device_name})'
+        return repr_string.format(self.__class__.__name__, **self.__dict__)
+
+    def _connect(self):
         self._get_oath_token()
         self._populate()
+
+    def _disconnect(self):
+        self.request_session.close()
 
     def _oath_timeout_check(f):
         @wraps(f)
@@ -213,10 +226,10 @@ class ActronQueClient(object):
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG)
-    test = ActronQueClient(sys.argv[1], sys.argv[2])
-    test.connect()
-    while True:
-        time.sleep(10)
-        print(time.time())
-        test.refresh_data()
-    print(test.get_ac_systems())
+    with ActronQueClient(sys.argv[1], sys.argv[2]) as test:
+        #test.connect()
+        while True:
+            time.sleep(10)
+            print(time.time())
+            test.refresh_data()
+        print(test.get_ac_systems())
