@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
 import logging
+import pprint
 
-from actronquepy import ActronAttribute
+from quedatatypes import ActronAttribute
 
 logger = logging.getLogger(__name__)
 
@@ -65,6 +66,48 @@ LIVE_STATS = {
 }
 
 SUPPORTED = (ZONES, LIVE_STATS)
+
+
+class DottedAttribute(object):
+
+    def __init__(self):
+        self.attributes = {}
+
+    def __contains__(self, item):
+        return item in self.attributes
+
+    def _get_values(self, data, path=''):
+        if isinstance(data, dict):
+            for key, value in data.iteritems():
+                if path == '':
+                     self._get_values(value, path = str(key))
+                else:
+                    self._get_values(value, path='{0}.{1}'.format(path, key))
+        elif isinstance(data, list):
+            for i, value in enumerate(data):
+                self._get_values(value, path='{0}.[{1}]'.format(path, i))
+        else:
+            if path in self:
+                self.get_attribute(path).value = data
+            else:
+                self.attributes[path] = ActronAttribute(path, data)
+
+    def get_attribute(self, attribute_path):
+        '''
+        Checks if ActronAttribute exits for a given path and returns
+        an ActronAttribute if it exits.
+        '''
+        try:
+            return self.attributes[attribute_path]
+        except KeyError:
+            return None
+
+    def refresh(self, json_data):
+        self._get_values(json_data)
+
+    def dump_data(self):
+        print pprint.pprint(self.attributes)
+
 
 def dot_notation(json_data, split_path):
     for key in split_path:

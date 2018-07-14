@@ -11,7 +11,7 @@ with open('LICENSE') as f:
 
 setup(
     name='actronquepy',
-    version='0.0.1',
+    version='0.0.2',
     description='A method for interfacing with Actron Que Air Conditioning',
     long_description=readme,
     author='Gambellator',

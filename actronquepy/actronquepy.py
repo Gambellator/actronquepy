@@ -7,7 +7,8 @@ import pprint
 from functools import wraps
 import requests
 
-import definitions 
+import definitions as definitions
+from quedatatypes import ActronAttribute, ActronQueZone, ActronQueSensor, ActronQueCommand
 
 BASE_URL = 'https://que.actronair.com.au'
 USER_DEVICES_SUFFIX = '/api/v0/client/user-devices'
@@ -32,7 +33,7 @@ class ActronQueACSystem(object):
         self.attribute_tree = None
         self.zones = [None] * MAX_ZONES
         self.system_stats = []
-        self.attribute_index = {}
+        self.attribute_index = definitions.DottedAttribute()
 
     def _populate_zones(self):
         for i, zone in enumerate(self.attribute_tree['lastKnownState']['RemoteZoneInfo']):
@@ -50,85 +51,19 @@ class ActronQueACSystem(object):
 
     def populate(self, lastKnownStateDump):
         self.attribute_tree = lastKnownStateDump
+        formatted_serial = unicode("<{0}>".format(self.serial).upper())
+        self.attribute_index.refresh(self.attribute_tree['lastKnownState'])
+        #self.attribute_index.dump_data()
+
         #print pprint.pprint(lastKnownStateDump)
-        self._populate_zones()
-        self._populate_system_stats()
+        #self._populate_zones()
+        #self._populate_system_stats()
 
     def get_attribute(self, path):
         try:
             return self.attribute_index[path]
         except KeyError:
             return None
-
-class ActronAttribute(object):
-
-    def __init__(self, path, value, mutable=True):
-        self.path = path
-        self.attribute = self.path.split(".")[-1]
-        self.value = value
-        self.mutable = mutable
-        logger.debug("Creating Attribute: %s", self.__repr__())
-
-    def __str__(self):
-        return str(self.value)
-
-    def __repr__(self):
-        return 'ActronAttribute({0}, {1})'.format(self.path, self.value)
-
-    def __eq__(self, other):
-        return self.value == other
-
-    def __ne__(self, other):
-        return not self.__eq__(other)
-
-    # @property
-    # def value(self):
-    #     pass
-
-    def _update_value(self):
-        pass
-
-    def update_value(self):
-        pass
-
-    def get_value(self):
-        return self.value
-
-    def get_path_value(self):
-        return (self.path, self.value)
-
-class ActronQueZone(object):
-
-    def __init__(self, index):
-        self.index = index
-        self.name = ''
-        self.attributes = []
-
-    def __repr__(self):
-        return '{0} {1} {2}'.format(self.index, self.name, self.attributes)
-
-    def add_attribute(self, attribute):
-        self.attributes.append(attribute)
-
-class ActronQueSensor(object):
-    pass
-
-class ActronQueCommand(object):
-
-    COMMAND_STRUCT = {'command':{'type': 'set-settings'}}
-
-    def __init__(self, serial, command, value):
-        self.serial = serial
-        self.command = command
-        self.value = value
-
-    def __str__(self):
-        return '{0}: {1}'.format(self.command, self.value)
-
-    def get_formatted(self):
-        formatted_command = COMMAND_STRUCT
-        formatted_command[self.command] = self.value
-        return formatted_command
 
 class ActronQueClient(object):
 
@@ -144,6 +79,7 @@ class ActronQueClient(object):
 
     def __enter__(self):
         self._connect()
+        return self
 
     def __exit__(self, exc_type, exc_value, traceback):
         self._disconnect()
