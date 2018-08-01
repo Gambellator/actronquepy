@@ -31,16 +31,20 @@ class ActronQueACSystem(object):
         self.ac_id = ac_id
         self.ac_type = ac_type
         self.attribute_tree = None
-        self.zones = [None] * MAX_ZONES
+        #self.zones = [None] * MAX_ZONES
+        self.zones = map(ActronQueZone, range(MAX_ZONES))
         self.system_stats = []
         self.attribute_index = definitions.DottedAttribute()
 
     def _populate_zones(self):
-        for i, zone in enumerate(self.attribute_tree['lastKnownState']['RemoteZoneInfo']):
-            self.zones[i] = ActronQueZone(i)
-            for attribute in definitions.populate_zone(self.attribute_tree['lastKnownState'], i):
-                self.attribute_index[attribute.path] = attribute
-                self.zones[i].add_attribute(attribute)
+        for i, zone in enumerate(self.zones):
+            zone.title = self.get_attribute('RemoteZoneInfo.[{0}].NV_Title'.format(i))
+            zone.zone_position = self.get_attribute('RemoteZoneInfo.[{0}].ZonePosition'.format(i))
+            zone.live_temp = self.get_attribute('RemoteZoneInfo.[{0}].LiveTemp_oC'.format(i))
+            #self.zones[i] = ActronQueZone(i)
+            #for attribute in definitions.populate_zone(self.attribute_tree['lastKnownState'], i):
+            #    self.attribute_index[attribute.path] = attribute
+            #    self.zones[i].add_attribute(attribute)
 
     def _populate_system_stats(self):
         self.system_stats = []
@@ -56,14 +60,16 @@ class ActronQueACSystem(object):
         #self.attribute_index.dump_data()
 
         #print pprint.pprint(lastKnownStateDump)
-        #self._populate_zones()
+        self._populate_zones()
+        print self.zones
         #self._populate_system_stats()
 
     def get_attribute(self, path):
         try:
-            return self.attribute_index[path]
+            return self.attribute_index.get_attribute(path)
         except KeyError:
             return None
+
 
 class ActronQueClient(object):
 

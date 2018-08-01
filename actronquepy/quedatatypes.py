@@ -48,11 +48,15 @@ class ActronQueZone(object):
 
     def __init__(self, index):
         self.index = index
-        self.name = ''
-        self.attributes = []
+        self.title = ''
+        self.zone_position = 0
+        self.live_temp = 0.0
 
     def __repr__(self):
-        return '{0} {1} {2}'.format(self.index, self.name, self.attributes)
+        return '{0} {1} {2} {3}'.format(self.index, self.title.value, self.zone_position.value * 5, self.live_temp.value)
+
+    def populate(self):
+        pass
 
     def add_attribute(self, attribute):
         self.attributes.append(attribute)
