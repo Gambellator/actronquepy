@@ -51,9 +51,12 @@ class ActronQueZone(object):
         self.title = ''
         self.zone_position = 0
         self.live_temp = 0.0
+        self.zone_exists = False
 
     def __repr__(self):
-        return '{0} {1} {2} {3}'.format(self.index, self.title.value, self.zone_position.value * 5, self.live_temp.value)
+        if self.zone_exists.value:
+            return '{0} {1} {2} {3}'.format(self.index, self.title.value, self.zone_position.value * 5, self.live_temp.value)
+        return 'Not Active'
 
     def populate(self):
         pass

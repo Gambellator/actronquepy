@@ -41,6 +41,7 @@ class ActronQueACSystem(object):
             zone.title = self.get_attribute('RemoteZoneInfo.[{0}].NV_Title'.format(i))
             zone.zone_position = self.get_attribute('RemoteZoneInfo.[{0}].ZonePosition'.format(i))
             zone.live_temp = self.get_attribute('RemoteZoneInfo.[{0}].LiveTemp_oC'.format(i))
+            zone.zone_exists = self.get_attribute('RemoteZoneInfo.[{0}].NV_Exists'.format(i))
             #self.zones[i] = ActronQueZone(i)
             #for attribute in definitions.populate_zone(self.attribute_tree['lastKnownState'], i):
             #    self.attribute_index[attribute.path] = attribute
